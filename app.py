@@ -2,95 +2,100 @@ import streamlit as st
 import re
 from datetime import datetime
 
-st.set_page_config(page_title="Admissão Ortopedia", layout="centered")
-st.title("Gerador de Admissão - Farmácia Clínica Ortopedia")
+st.title("Gerador de Formatação de Admissão - Farmácia Clínica Ortopedia 2.0")
 
-prontuario_texto = st.text_area("Cole abaixo o texto do prontuário:", height=300)
+texto = st.text_area("Cole aqui os dados do prontuário:")
 
-def formatar_data(data_str):
-    """Aceita datas com 2 ou 4 dígitos no ano e padroniza para dd/mm/yyyy."""
-    try:
-        if re.match(r'\d{2}/\d{2}/\d{2}$', data_str):
-            return datetime.strptime(data_str, "%d/%m/%y").strftime("%d/%m/%Y")
-        elif re.match(r'\d{2}/\d{2}/\d{4}$', data_str):
-            return datetime.strptime(data_str, "%d/%m/%Y").strftime("%d/%m/%Y")
-    except:
-        return data_str
-    return data_str
+if st.button("Gerar Formatação"):
+    hoje = datetime.now().strftime("%d/%m/%Y")
 
-def extrair_info(texto):
-    paciente = re.search(r'Paciente:\s+(.*?)\t', texto)
+    # Extrair informações com expressões regulares
+    paciente = re.search(r'Paciente:\s+(.*?)(?:\t|  )', texto)
     ses = re.search(r'SES:\s+(\d+)', texto)
     idade = re.search(r'Idade:\s+(\d+)', texto)
-    peso = re.search(r'Peso:\s+(\d+)', texto)
-
+    peso = re.search(r'Peso[: ]+(\d+)', texto, re.IGNORECASE)
+    
     # Diagnóstico
-    diagnostico_match = re.search(r'DIAGN[ÓO]STICOS?:\s*\n((?:- .*\n?)+)', texto, re.IGNORECASE)
-    if diagnostico_match:
-        linhas_diagnostico = diagnostico_match.group(1).strip().splitlines()
-        diagnostico_formatado = " / ".join([linha.strip("- ").strip() for linha in linhas_diagnostico])
-    else:
-        diagnostico_formatado = "Diagnóstico não especificado"
+    motivo = re.search(r'DIAGNÓSTICOS?:\s*(?:-)?\s*(.*?)(?:\n|$)', texto, re.IGNORECASE | re.DOTALL)
 
     # Mecanismo do trauma
-    mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.*)', texto)
+    mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.*)', texto, re.IGNORECASE)
     if not mecanismo:
-        mecanismo = re.search(r'HDA:\s*(.*)', texto)
-    mecanismo_texto = mecanismo.group(1).strip() if mecanismo else "mecanismo não especificado"
+        mecanismo = re.search(r'HDA:\s*(.*)', texto, re.IGNORECASE)
+    mecanismo = mecanismo.group(1).strip() if mecanismo else "mecanismo não especificado"
 
-    # Data da fratura
-    data_fratura_match = re.search(r'DATA DA FRATURA:\s+(\d{2}/\d{2}/\d{2,4})', texto)
-    data_fratura = formatar_data(data_fratura_match.group(1)) if data_fratura_match else "-"
+    # Datas
+    def corrigir_data(data):
+        partes = data.split('/')
+        if len(partes[-1]) == 2:
+            partes[-1] = '20' + partes[-1]
+        return '/'.join(partes)
 
-    # Datas da cirurgia
-    cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
-    if cirurgia_matches:
-        datas_cirurgia_texto = []
-        for data, medico in cirurgia_matches:
-            data_formatada = formatar_data(data)
-            if medico:
-                medico_formatado = re.sub(r'(?i)^dr[.]?\s*', '', medico.strip())
-                medico_formatado = "Dr. " + medico_formatado.title()
-                datas_cirurgia_texto.append(f"{data_formatada} ({medico_formatado})")
-            else:
-                datas_cirurgia_texto.append(data_formatada)
-        datas_cirurgia_texto = ", ".join(datas_cirurgia_texto)
-    else:
-        datas_cirurgia_texto = "-"
+    data_fratura = re.search(r'DATA DA (?:FRATURA|LESAO):\s*(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
+    data_fratura = corrigir_data(data_fratura.group(1)) if data_fratura else "-"
 
-    # Data atual formatada para admissão e entrevista
-    hoje = datetime.today().strftime('%d/%m/%Y')
+    cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto, re.IGNORECASE)
+    datas_cirurgia = []
+    for data, medico in cirurgia_matches:
+        data_corrigida = corrigir_data(data)
+        if medico:
+            datas_cirurgia.append(f"{data_corrigida} ({medico.strip().title()})")
+        else:
+            datas_cirurgia.append(f"{data_corrigida}")
+    data_cirurgia = "\n".join(datas_cirurgia) if datas_cirurgia else "-"
 
-    return {
-        "paciente": paciente.group(1) if paciente else "",
-        "ses": ses.group(1) if ses else "",
-        "idade": idade.group(1) if idade else "",
-        "peso": peso.group(1) if peso else "—",
-        "data_admissao": hoje,
-        "data_entrevista": hoje,
-        "motivo": diagnostico_formatado,
-        "mecanismo": mecanismo_texto,
-        "data_fratura": data_fratura,
-        "datas_cirurgia": datas_cirurgia_texto
-    }
-
-if prontuario_texto:
-    dados = extrair_info(prontuario_texto)
-
-    resultado = f"""
-FARMÁCIA CLÍNICA 
+    # Montar texto formatado
+    output = f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1 ou 2
 ----------------------------------------------------------------------------
-Paciente: {dados['paciente']}; SES: {dados['ses']}; 
-Idade: {dados['idade']} anos; Peso: {dados['peso']}
-Data de admissão: {dados['data_admissao']}
-Data da entrevista: {dados['data_entrevista']}
+Paciente: {paciente.group(1) if paciente else '***'}; SES: {ses.group(1) if ses else '***'}; 
+Idade: {idade.group(1) if idade else '***'} anos; Peso: {peso.group(1) if peso else '***'}
+Data de admissão: {hoje}
+Data da entrevista: {hoje}
 ----------------------------------------------------------------------------
-Motivo da internação: {dados['motivo']}
+Motivo da internação:
+{motivo.group(1).strip() if motivo else '***'}
+Mecanismo do trauma:
+{mecanismo}
+Data da fratura: {data_fratura}
+Data da cirurgia: {data_cirurgia}
+----------------------------------------------------------------------------
+Antecedentes: 
+----------------------------------------------------------------------------
+Alergias: 
+----------------------------------------------------------------------------
+Conciliação medicamentosa:
+- Histórico obtido através de: 
+- Medicamentos de uso domiciliar: 
+----------------------------------------------------------------------------
+Antimicrobianos:
+Em uso:
+- 
+Uso prévio:
+- 
+-----------------------------------------------------------------------------
+Culturas e Sorologias:
+-----------------------------------------------------------------------------
+Profilaxias e protocolos
+- TEV/TVP: 
+- 
+- LAMG: 
+-
+- Analgesia:
+- 
+----------------------------------------------------------------------------- 
+Conduta
+- Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
+- Realizo visita beira a leito, encontro o paciente dormindo 
+- Monitoro exames laboratoriais de **/**/****, controles e evolução clínica.
+---
+- Acompanho antibioticoterapia e parâmetros infecciosos: Paciente afebril, em uso de (***) D*; Leuco **.
+- Paciente avaliado como risco (****), reavaliação programada para o dia: **/**/****
+- Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
 
-Mecanismo do trauma: {dados['mecanismo']}
-Data da fratura: {dados['data_fratura']}.
-Data da cirurgia: {dados['datas_cirurgia']}.
-    """.strip()
+- Estagiário ***, supervisionado por *********
+- Farmacêutico ***
+*******************************************************
+"""
 
-    st.text_area("Resultado formatado:", value=resultado, height=300)
+    st.text_area("Formatação gerada:", value=output, height=900)
