@@ -1,159 +1,113 @@
 import streamlit as st
 import re
 from datetime import datetime
-import unicodedata
 
-def remover_acentos(txt):
-    return ''.join(c for c in unicodedata.normalize('NFD', txt)
-                   if unicodedata.category(c) != 'Mn')
+st.title("Gerador de Admissão Farmácia Clínica")
+
+texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
 def extrair_info(texto):
-    texto_sem_acentos = remover_acentos(texto.lower())
+    hoje = datetime.today().strftime('%d/%m/%Y')
 
-    nome = re.search(r'paciente:\s*(.+?)\t', texto, re.IGNORECASE)
-    ses = re.search(r'ses:\s*(\d+)', texto, re.IGNORECASE)
-    idade = re.search(r'idade:\s*(\d+)', texto, re.IGNORECASE)
-    peso = re.search(r'peso[:\s]*([\d,\.]+)', texto, re.IGNORECASE)
-    motivo = re.search(r'diagn[oó]sticos?:\s*(.*?)\n', texto, re.IGNORECASE | re.DOTALL)
-    mecanismo = re.search(r'(hda:|mecanismo do trauma:)\s*(.*?)(?:\n|$)', texto, re.IGNORECASE)
+    # Função para normalizar datas
+    def normalizar_data(data):
+        if re.match(r'\d{2}/\d{2}/\d{2}$', data):
+            return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
+        return data
 
-    fratura = re.search(r'data da (fratura|lesao):\s*(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
-    cirurgia_matches = re.findall(r'data da cirurgia:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto, re.IGNORECASE)
+    # SES e paciente
+    ses = re.search(r'SES:\s+(\d+)', texto)
+    paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
+    idade = re.search(r'Idade:\s+(\d+)', texto)
+    
+    # Diagnóstico
+    diagnostico = ""
+    padroes_diagnostico = [
+        r'DIAGNÓSTICOS?:\s*((?:- .+\n?)+)',
+        r'DIAGNÓSTICO:\s*((?:- .+\n?)+)',
+        r'DIAGNÓSTICO:\s+([^\n]+)'
+    ]
+    for padrao in padroes_diagnostico:
+        match = re.search(padrao, texto, re.IGNORECASE)
+        if match:
+            diagnostico = match.group(1).strip().replace('\n', ' ')
+            break
 
-    data_hoje = datetime.now().strftime('%d/%m/%Y')
+    # Mecanismo do trauma
+    mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.+)', texto, re.IGNORECASE)
+    hda = re.search(r'HDA:\s*(.+)', texto, re.IGNORECASE)
+    mecanismo_trauma = "mecanismo não especificado"
+    if mecanismo:
+        mecanismo_trauma = mecanismo.group(1).strip()
+    elif hda:
+        mecanismo_trauma = hda.group(1).strip()
 
-    if cirurgia_matches:
-        cirurgias = []
-        for data, medico in cirurgia_matches:
-            data_fmt = formatar_data(data)
-            if medico:
-                medico_fmt = medico.strip().capitalize()
-                cirurgias.append(f"{data_fmt} ({medico_fmt})")
-            else:
-                cirurgias.append(f"{data_fmt}")
-        cirurgia_str = "; ".join(cirurgias)
-    else:
-        cirurgia_str = "-"
+    # Data da fratura ou lesão
+    data_fratura = re.search(r'DATA DA (?:FRATURA|LES[AÃ]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
+    data_fratura_formatada = normalizar_data(data_fratura.group(1)) if data_fratura else "-"
 
-    return {
-        "paciente": nome.group(1).strip() if nome else "***",
-        "ses": ses.group(1) if ses else "***",
-        "idade": idade.group(1) if idade else "***",
-        "peso": peso.group(1) if peso else "***",
-        "data_admissao": data_hoje,
-        "data_entrevista": data_hoje,
-        "motivo": motivo.group(1).strip().replace('\n', ' ') if motivo else "***",
-        "mecanismo": mecanismo.group(2).strip() if mecanismo else "mecanismo não especificado",
-        "fratura": formatar_data(fratura.group(2)) if fratura else "-",
-        "cirurgia": cirurgia_str
-    }
-
-def formatar_data(data):
-    partes = data.strip().split('/')
-    if len(partes[2]) == 2:
-        partes[2] = '20' + partes[2]
-    return '/'.join(partes)
-
-def extrair_analgesia(texto):
-    analgesicos = []
-    texto = remover_acentos(texto.lower())
-
-    padrao = r'(dipirona|tramadol)[^\n]*?\n?(\d+)\s+miligrama.*?(\d+\s*x\s*\d+\s*h|a criterio medico|sos).*?(endovenosa|subcutanea)'
-    matches = re.findall(padrao, texto, re.IGNORECASE)
-
-    for nome, dose, freq, via in matches:
-        freq = freq.lower()
-        if "criterio" in freq:
-            freq_fmt = "ACM"
-        elif "sos" in freq:
-            freq_fmt = "SOS"
+    # Datas de cirurgia e médicos
+    cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
+    datas_cirurgia = []
+    for data, medico in cirurgia_matches:
+        data_formatada = normalizar_data(data)
+        if medico:
+            medico = medico.strip()
+            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico)
+            datas_cirurgia.append(f"{data_formatada} (Dr. {medico.capitalize()})")
         else:
-            freq_fmt = re.sub(r'\s+', '', freq)
-        via_fmt = "EV" if "endovenosa" in via else "SC"
-        analgesicos.append(f"{nome.capitalize()} {dose}mg, {freq_fmt}, {via_fmt}")
+            datas_cirurgia.append(data_formatada)
+    cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
 
-    return "; ".join(analgesicos) if analgesicos else "-"
+    # Analgesia (dipirona e tramadol)
+    analgesicos = []
+    analgesia_padrao = re.compile(
+        r'(DIPI?RONA|TRAMADOL)[^\n]*?\n(\d+)\s+Mili(?:grama|gramas).*?\n(.+?)\s+(Endovenosa)',
+        re.IGNORECASE
+    )
+    for match in analgesia_padrao.findall(texto):
+        nome = match[0].capitalize()
+        dose = match[1]
+        freq_raw = match[2].lower()
+        via = "EV"
+        if "crit" in freq_raw:
+            freq = "ACM"
+        elif "sos" in freq_raw:
+            freq = "SOS"
+        else:
+            freq = re.sub(r'[^0-9x/]', '', freq_raw).replace('x', 'x')
+            if not freq:
+                freq = freq_raw
+        analgesicos.append(f"{nome} {dose}mg, {freq}, {via}")
+    analgesia_str = "; ".join(analgesicos) if analgesicos else "-"
 
-def extrair_tev_tvp(texto):
-    texto = remover_acentos(texto.lower())
-    texto = re.sub(r'[ \t]+', ' ', texto)
+    # TEV/TVP com Enoxaparina
+    tev_tvp = "-"
+    enoxa_match = re.search(
+        r'ENOXAPARINA[^\n]*?\n(\d+)\s+UM.*?\n(.+?)\s+(Subcutanea)',
+        texto, re.IGNORECASE
+    )
+    if enoxa_match:
+        dose = enoxa_match.group(1)
+        freq_raw = enoxa_match.group(2).lower()
+        via = "SC"
+        if "crit" in freq_raw:
+            freq = "ACM"
+        elif "sos" in freq_raw:
+            freq = "SOS"
+        else:
+            freq = re.sub(r'[^0-9x/]', '', freq_raw).replace('x', 'x')
+            if not freq:
+                freq = freq_raw
+        tev_tvp = f"Enoxaparina {dose}mg, {freq}, {via}"
 
-    padrao = r'enoxaparina.*?(\d+)\s+mg.*?(1\s+vez\s+ao\s+dia|1x/dia|1\s*x\s*/\s*dia).*?(subcutanea)'
-    resultados = re.findall(padrao, texto, re.DOTALL)
-
-    protocolos = []
-    for dose, freq, via in resultados:
-        dose_fmt = f"{dose}mg"
-        freq_fmt = "1x/dia"
-        via_fmt = "SC" if "subcutanea" in via else via.upper()
-        protocolos.append(f"Enoxaparina {dose_fmt}, {freq_fmt}, {via_fmt}")
-
-    return "; ".join(protocolos) if protocolos else "-"
-
-# Interface do Streamlit
-st.title("Gerador de Admissão - Farmácia Clínica Ortopedia")
-
-texto_input = st.text_area("Cole aqui o texto do prontuário:")
-
-if st.button("Gerar Formatação"):
-    if texto_input:
-        info = extrair_info(texto_input)
-        analgesia = extrair_analgesia(texto_input)
-        tev_tvp = extrair_tev_tvp(texto_input)
-
-        resultado = f"""
-FARMÁCIA CLÍNICA 
-ADMISSÃO ORTOPEDIA 1 ou 2
+    # Formatação final
+    resultado = f"""FARMÁCIA CLÍNICA 
+ADMISSÃO ORTOPEDIA 1
 ----------------------------------------------------------------------------
-Paciente: {info["paciente"]}; SES: {info["ses"]}; 
-Idade: {info["idade"]} anos; Peso: {info["peso"]}
-Data de admissão: {info["data_admissao"]}
-Data da entrevista: {info["data_entrevista"]}
+Paciente: {paciente.group(1) if paciente else '-'}; SES: {ses.group(1) if ses else '-'}; 
+Idade: {idade.group(1) if idade else '-'} anos; Peso: -
+Data de admissão: {hoje}
+Data da entrevista: {hoje}
 ----------------------------------------------------------------------------
-Motivo da internação:
-{info["motivo"]}
-Mecanismo do trauma:
-{info["mecanismo"]}
-Data da fratura: {info["fratura"]}
-Data da cirurgia: {info["cirurgia"]}
-----------------------------------------------------------------------------
-Antecedentes: 
-----------------------------------------------------------------------------
-Alergias: 
-----------------------------------------------------------------------------
-Conciliação medicamentosa:
-- Histórico obtido através de: 
-- Medicamentos de uso domiciliar: 
-----------------------------------------------------------------------------
-Antimicrobianos:
-Em uso:
-- 
-Uso prévio:
-- 
------------------------------------------------------------------------------
-Culturas e Sorologias:
------------------------------------------------------------------------------
-Profilaxias e protocolos
-- TEV/TVP: {tev_tvp}
-- 
-- LAMG: 
--
-- Analgesia:
-- {analgesia}
------------------------------------------------------------------------------ 
-Conduta
-- Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
-- Realizo visita beira a leito, encontro o paciente dormindo 
-- Monitoro exames laboratoriais de **/**/****, controles e evolução clínica.
----
-- Acompanho antibioticoterapia e parâmetros infecciosos: Paciente afebril, em uso de (***) D*; Leuco **.
-- Paciente avaliado como risco (****), reavaliação programada para o dia: **/**/****
-- Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
-
-- Estagiário ***, supervisionado por *********
-- Farmacêutico ***
-*******************************************************
-"""
-        st.text_area("Resultado Formatado:", resultado, height=900)
-    else:
-        st.warning("Por favor, cole o texto do prontuário.")
+Motivo da intern
