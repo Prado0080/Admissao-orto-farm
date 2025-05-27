@@ -56,8 +56,11 @@ def formatar_data(data):
 
 def extrair_analgesia(texto):
     analgesicos = []
-    padrao = r'(dipirona|tramadol)[^\n]*?\n(\d+)\s+miligrama.*?\n.*?\n([^\n]+)\n.*?(endovenosa|subcutanea)'
-    matches = re.findall(padrao, remover_acentos(texto.lower()), re.IGNORECASE)
+    texto = remover_acentos(texto.lower())
+
+    padrao = r'(dipirona|tramadol)[^\n]*?\n?(\d+)\s+miligrama.*?(\d+\s*x\s*\d+\s*h|a criterio medico|sos).*?(endovenosa|subcutanea)'
+    matches = re.findall(padrao, texto, re.IGNORECASE)
+
     for nome, dose, freq, via in matches:
         freq = freq.lower()
         if "criterio" in freq:
@@ -68,6 +71,7 @@ def extrair_analgesia(texto):
             freq_fmt = re.sub(r'\s+', '', freq)
         via_fmt = "EV" if "endovenosa" in via else "SC"
         analgesicos.append(f"{nome.capitalize()} {dose}mg, {freq_fmt}, {via_fmt}")
+
     return "; ".join(analgesicos) if analgesicos else "-"
 
 def extrair_tev_tvp(texto):
