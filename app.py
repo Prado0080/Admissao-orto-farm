@@ -110,4 +110,52 @@ Idade: {idade.group(1) if idade else '-'} anos; Peso: -
 Data de admissão: {hoje}
 Data da entrevista: {hoje}
 ----------------------------------------------------------------------------
-Motivo da intern
+Motivo da internação:
+{diagnostico}
+Mecanismo do trauma:
+{mecanismo_trauma}
+Data da fratura: {data_fratura_formatada}
+Data da cirurgia: {cirurgia_str}
+----------------------------------------------------------------------------
+Antecedentes: 
+----------------------------------------------------------------------------
+Alergias: 
+----------------------------------------------------------------------------
+Conciliação medicamentosa:
+- Histórico obtido através de: 
+- Medicamentos de uso domiciliar: 
+----------------------------------------------------------------------------
+Antimicrobianos:
+Em uso:
+- 
+Uso prévio:
+- 
+-----------------------------------------------------------------------------
+Culturas e Sorologias:
+-----------------------------------------------------------------------------
+Profilaxias e protocolos
+- TEV/TVP: {tev_tvp}
+- 
+- LAMG: 
+-
+- Analgesia:
+- {analgesia_str}
+----------------------------------------------------------------------------- 
+Conduta
+- Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
+- Realizo visita beira a leito, encontro o paciente dormindo 
+- Monitoro exames laboratoriais de **/**/****, controles e evolução clínica.
+---
+- Acompanho antibioticoterapia e parâmetros infecciosos: Paciente afebril, em uso de (***) D*; Leuco **.
+- Paciente avaliado como risco (****), reavaliação programada para o dia: **/**/****
+- Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
+
+- Estagiário ***, supervisionado por *********
+- Farmacêutico ***
+*******************************************************"""
+    return resultado
+
+if texto:
+    resultado = extrair_info(texto)
+    st.text_area("Resultado Formatado:", resultado, height=1000)
+    st.download_button("📥 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
