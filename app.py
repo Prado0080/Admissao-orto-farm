@@ -28,6 +28,26 @@ selecionados_tev = st.multiselect(
     max_selections=3
 )
 
+# --- Seleção LAMG ---
+opcoes_lamg = [
+    "Omeprazol 20mg 1x/dia VO",
+    "Omeprazol 20mg 12/12h VO",
+    "Omeprazol 40mg 1x/dia EV",
+    "Omeprazol 40mg 12/12h EV",
+    "Omeprazol 80mg 1x/dia EV",
+    "Omeprazol 80mg 12/12h EV",
+    "Pantoprazol 40mg 1x/dia EV",
+    "Pantoprazol 40mg 12/12h EV",
+    "Pantoprazol 80mg 1x/dia EV",
+    "Pantoprazol 80mg 12/12h EV"
+]
+
+selecionados_lamg = st.multiselect(
+    "Profilaxia LAMG (Selecione até 3 opções):",
+    options=opcoes_lamg,
+    max_selections=3
+)
+
 def extrair_info(texto):
     hoje = datetime.today().strftime('%d/%m/%Y')
 
@@ -76,6 +96,7 @@ def extrair_info(texto):
     cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
 
     tev_texto = "\n".join([f"- {med}" for med in selecionados_tev]) if selecionados_tev else "- Não prescrito"
+    lamg_texto = "\n".join([f"- {med}" for med in selecionados_lamg]) if selecionados_lamg else "- Não prescrito"
 
     resultado = f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
@@ -111,8 +132,8 @@ Culturas e Sorologias:
 Profilaxias e protocolos
 - TEV/TVP:
 {tev_texto}
-- LAMG: 
--
+- LAMG:
+{lamg_texto}
 - Analgesia:
 -
 ----------------------------------------------------------------------------- 
