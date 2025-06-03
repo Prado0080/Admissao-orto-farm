@@ -85,12 +85,12 @@ Uso prévio:
 Culturas e Sorologias:
 -----------------------------------------------------------------------------
 Profilaxias e protocolos
-- TEV/TVP: {tev_tvp}
+- TEV/TVP:
 - 
 - LAMG: 
 -
 - Analgesia:
-- {analgesia_str}
+-
 ----------------------------------------------------------------------------- 
 Conduta
 - Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
