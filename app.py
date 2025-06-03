@@ -53,46 +53,6 @@ def extrair_info(texto):
             datas_cirurgia.append(data_formatada)
     cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
 
-    analgesicos = []
-    analgesia_padrao = re.compile(
-        r'(DIPI?RONA|TRAMADOL)[^\n]*?\n\s*(\d+)\s+Mili(?:grama|gramas)[^\n]*\n\s*(.+?)\s+(Endovenosa)',
-        re.IGNORECASE
-    )
-    for match in analgesia_padrao.findall(texto):
-        nome = match[0].capitalize()
-        dose = match[1]
-        freq_raw = match[2].lower()
-        via = "EV"
-        if "crit" in freq_raw:
-            freq = "ACM"
-        elif "sos" in freq_raw:
-            freq = "SOS"
-        else:
-            freq = re.sub(r'[^0-9x/]', '', freq_raw).replace('x', 'x')
-            if not freq.strip():
-                freq = freq_raw.strip().split()[0]
-        analgesicos.append(f"{nome} {dose}mg, {freq}, {via}")
-    analgesia_str = "; ".join(analgesicos) if analgesicos else "-"
-
-    tev_tvp = "-"
-    enoxa_match = re.search(
-        r'ENOXAPARINA[^\n]*?\n\s*(\d+)\s+(?:UM|Miligrama.*)?\s*\n\s*(.+?)\s+(Subcutanea)',
-        texto, re.IGNORECASE
-    )
-    if enoxa_match:
-        dose = enoxa_match.group(1)
-        freq_raw = enoxa_match.group(2).lower()
-        via = "SC"
-        if "crit" in freq_raw:
-            freq = "ACM"
-        elif "sos" in freq_raw:
-            freq = "SOS"
-        else:
-            freq = re.sub(r'[^0-9x/]', '', freq_raw).replace('x', 'x')
-            if not freq.strip():
-                freq = freq_raw.strip().split()[0]
-        tev_tvp = f"Enoxaparina {dose}mg, {freq}, {via}"
-
     resultado = f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
 ----------------------------------------------------------------------------
