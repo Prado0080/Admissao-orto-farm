@@ -6,6 +6,28 @@ st.title("Gerador de Admissão Farmácia Clínica")
 
 texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
+# --- Seleção TEV/TVP ---
+opcoes_tev = [
+    "Enoxaparina 20mg 1x/dia SC",
+    "Enoxaparina 20mg 12/12h SC",
+    "Enoxaparina 40mg 1x/dia SC",
+    "Enoxaparina 40mg 12/12h SC",
+    "Enoxaparina 60mg 1x/dia SC",
+    "Enoxaparina 60mg 12/12h SC",
+    "Enoxaparina 80mg 1x/dia SC",
+    "Enoxaparina 80mg 12/12h SC",
+    "Enoxaparina 100mg 1x/dia SC",
+    "Enoxaparina 100mg 12/12h SC",
+    "HNF 5.000UI 12/12h SC",
+    "HNF 5.000UI 8/8h SC"
+]
+
+selecionados_tev = st.multiselect(
+    "Profilaxia TEV/TVP (Selecione até 3 opções):",
+    options=opcoes_tev,
+    max_selections=3
+)
+
 def extrair_info(texto):
     hoje = datetime.today().strftime('%d/%m/%Y')
 
@@ -53,6 +75,8 @@ def extrair_info(texto):
             datas_cirurgia.append(data_formatada)
     cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
 
+    tev_texto = "\n".join([f"- {med}" for med in selecionados_tev]) if selecionados_tev else "- Não prescrito"
+
     resultado = f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
 ----------------------------------------------------------------------------
@@ -86,7 +110,7 @@ Culturas e Sorologias:
 -----------------------------------------------------------------------------
 Profilaxias e protocolos
 - TEV/TVP:
-- 
+{tev_texto}
 - LAMG: 
 -
 - Analgesia:
