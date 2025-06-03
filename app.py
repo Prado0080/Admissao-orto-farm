@@ -161,8 +161,10 @@ Culturas e Sorologias:
 Profilaxias e protocolos
 - TEV/TVP:
 {tev_texto}
+
 - LAMG:
 {lamg_texto}
+
 - Analgesia:
 {analgesia_texto}
 ----------------------------------------------------------------------------- 
