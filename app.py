@@ -48,7 +48,7 @@ selecionados_lamg = st.multiselect(
     max_selections=3
 )
 
-def extrair_info(texto):
+def extrair_info(texto, selecionados_tev, selecionados_lamg):
     hoje = datetime.today().strftime('%d/%m/%Y')
 
     def normalizar_data(data):
@@ -151,7 +151,8 @@ Conduta
 *******************************************************"""
     return resultado
 
+# Geração do resultado
 if texto:
-    resultado = extrair_info(texto)
+    resultado = extrair_info(texto, selecionados_tev, selecionados_lamg)
     st.text_area("Resultado Formatado:", resultado, height=1000)
     st.download_button("📥 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
