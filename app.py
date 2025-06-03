@@ -48,6 +48,32 @@ selecionados_lamg = st.multiselect(
     max_selections=3
 )
 
+# --- Seleção ANALGESIA ---
+opcoes_analgesia = [
+    "Dipirona 1g 6/6h EV",
+    "Dipirona 1g SOS EV",
+    "Tramadol 100mg 12/12h EV",
+    "Tramadol 100mg 8/8h EV",
+    "Tramadol 100mg 6/6h EV",
+    "Tramadol 100mg SOS EV",
+    "Tramadol 50mg 12/12h EV",
+    "Tramadol 50mg 8/8h EV",
+    "Tramadol 50mg 6/6h EV",
+    "Tramadol 50mg SOS EV",
+    "Tenoxicam 20mg 1x/dia EV",
+    "Tenoxicam 20mg 12/12h EV",
+    "Tenoxicam 40mg 1x/dia EV",
+    "Tenoxicam 40mg 12/12h EV",
+    "Naproxeno",
+    "Diclofenaco"
+]
+
+selecionados_analgesia = st.multiselect(
+    "Analgesia (Selecione até 3 opções):",
+    options=opcoes_analgesia,
+    max_selections=3
+) 
+
 def extrair_info(texto, selecionados_tev, selecionados_lamg):
     hoje = datetime.today().strftime('%d/%m/%Y')
 
@@ -97,6 +123,7 @@ def extrair_info(texto, selecionados_tev, selecionados_lamg):
 
     tev_texto = "\n".join([f"- {med}" for med in selecionados_tev]) if selecionados_tev else "- Não prescrito"
     lamg_texto = "\n".join([f"- {med}" for med in selecionados_lamg]) if selecionados_lamg else "- Não prescrito"
+    analgesia_texto = "\n".join([f"- {med}" for med in selecionados_analgesia]) if selecionados_analgesia else "- Não prescrito"
 
     resultado = f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
@@ -135,7 +162,7 @@ Profilaxias e protocolos
 - LAMG:
 {lamg_texto}
 - Analgesia:
--
+{analgesia_texto}
 ----------------------------------------------------------------------------- 
 Conduta
 - Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
