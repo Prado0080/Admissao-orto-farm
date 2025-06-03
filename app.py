@@ -32,6 +32,8 @@ selecionados_tev = st.multiselect(
 opcoes_lamg = [
     "Omeprazol 20mg 1x/dia VO",
     "Omeprazol 20mg 12/12h VO",
+    "Omeprazol 40mg 1x/dia VO",
+    "Omeprazol 40mg 12/12h VO",
     "Omeprazol 40mg 1x/dia EV",
     "Omeprazol 40mg 12/12h EV",
     "Omeprazol 80mg 1x/dia EV",
