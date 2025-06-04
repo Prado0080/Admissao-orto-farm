@@ -185,5 +185,14 @@ Conduta
 # Geração do resultado
 if texto:
     resultado = extrair_info(texto, selecionados_tev, selecionados_lamg)
-    st.text_area("Resultado Formatado:", resultado, height=1000)
+    st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
+
+# Botão para copiar para a área de transferência
+st.markdown("""
+    <button onclick="navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)" 
+            style="background-color:#4CAF50;border:none;color:white;padding:10px 20px;
+                   text-align:center;text-decoration:none;display:inline-block;
+                   font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
+        📋 Clique aqui para copiar
+    </button>
     st.download_button("📥 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
