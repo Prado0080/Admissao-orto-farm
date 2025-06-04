@@ -6,7 +6,7 @@ st.title("Gerador de Admissão Farmácia Clínica")
 
 texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
-# --- Seleção TEV/TVP ---
+# --- Seleções TEV/TVP ---
 opcoes_tev = [
     "Enoxaparina 20mg 1x/dia SC",
     "Enoxaparina 20mg 12/12h SC",
@@ -21,19 +21,12 @@ opcoes_tev = [
     "HNF 5.000UI 12/12h SC",
     "HNF 5.000UI 8/8h SC"
 ]
+selecionados_tev = st.multiselect("Profilaxia TEV/TVP (Selecione até 3 opções):", options=opcoes_tev, max_selections=3)
 
-selecionados_tev = st.multiselect(
-    "Profilaxia TEV/TVP (Selecione até 3 opções):",
-    options=opcoes_tev,
-    max_selections=3
-)
-
-# --- Seleção LAMG ---
+# --- Seleções LAMG ---
 opcoes_lamg = [
     "Omeprazol 20mg 1x/dia VO",
     "Omeprazol 20mg 12/12h VO",
-    "Omeprazol 40mg 1x/dia VO",
-    "Omeprazol 40mg 12/12h VO",
     "Omeprazol 40mg 1x/dia EV",
     "Omeprazol 40mg 12/12h EV",
     "Omeprazol 80mg 1x/dia EV",
@@ -43,14 +36,9 @@ opcoes_lamg = [
     "Pantoprazol 80mg 1x/dia EV",
     "Pantoprazol 80mg 12/12h EV"
 ]
+selecionados_lamg = st.multiselect("Profilaxia LAMG (Selecione até 3 opções):", options=opcoes_lamg, max_selections=3)
 
-selecionados_lamg = st.multiselect(
-    "Profilaxia LAMG (Selecione até 3 opções):",
-    options=opcoes_lamg,
-    max_selections=3
-)
-
-# --- Seleção ANALGESIA ---
+# --- Seleções ANALGESIA ---
 opcoes_analgesia = [
     "Dipirona 1g 6/6h EV",
     "Dipirona 1g SOS EV",
@@ -69,19 +57,14 @@ opcoes_analgesia = [
     "Naproxeno",
     "Diclofenaco"
 ]
+selecionados_analgesia = st.multiselect("Analgesia (Selecione até 3 opções):", options=opcoes_analgesia, max_selections=3)
 
-selecionados_analgesia = st.multiselect(
-    "Analgesia (Selecione até 3 opções):",
-    options=opcoes_analgesia,
-    max_selections=3
-) 
-
-def extrair_info(texto, selecionados_tev, selecionados_lamg):
+def extrair_info(texto):
     hoje = datetime.today().strftime('%d/%m/%Y')
 
     def normalizar_data(data):
         if re.match(r'\d{2}/\d{2}/\d{2}$', data):
-            return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
+            return re.sub(r'/()$', lambda m: '/20' + m.group(1), data)
         return data
 
     ses = re.search(r'SES:\s+(\d+)', texto)
@@ -90,9 +73,8 @@ def extrair_info(texto, selecionados_tev, selecionados_lamg):
 
     diagnostico = ""
     padroes_diagnostico = [
-        r'DIAGNÓSTICOS?:\s*((?:- .+\n?)+)',
-        r'DIAGNÓSTICO:\s*((?:- .+\n?)+)',
-        r'DIAGNÓSTICO:\s+([^\n]+)'
+        r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)',
+        r'DIAGN[ÓO]STICO:\s+([^\n]+)'
     ]
     for padrao in padroes_diagnostico:
         match = re.search(padrao, texto, re.IGNORECASE)
@@ -102,13 +84,9 @@ def extrair_info(texto, selecionados_tev, selecionados_lamg):
 
     mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.+)', texto, re.IGNORECASE)
     hda = re.search(r'HDA:\s*(.+)', texto, re.IGNORECASE)
-    mecanismo_trauma = "mecanismo não especificado"
-    if mecanismo:
-        mecanismo_trauma = mecanismo.group(1).strip()
-    elif hda:
-        mecanismo_trauma = hda.group(1).strip()
+    mecanismo_trauma = mecanismo.group(1).strip() if mecanismo else (hda.group(1).strip() if hda else "mecanismo não especificado")
 
-    data_fratura = re.search(r'DATA DA (?:FRATURA|LES[AÃ]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
+    data_fratura = re.search(r'DATA DA (?:FRATURA|LES[ÃA]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
     data_fratura_formatada = normalizar_data(data_fratura.group(1)) if data_fratura else "-"
 
     cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
@@ -116,8 +94,7 @@ def extrair_info(texto, selecionados_tev, selecionados_lamg):
     for data, medico in cirurgia_matches:
         data_formatada = normalizar_data(data)
         if medico:
-            medico = medico.strip()
-            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico)
+            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico.strip())
             datas_cirurgia.append(f"{data_formatada} (Dr. {medico.capitalize()})")
         else:
             datas_cirurgia.append(data_formatada)
@@ -161,10 +138,8 @@ Culturas e Sorologias:
 Profilaxias e protocolos
 - TEV/TVP:
 {tev_texto}
-
-- LAMG:
+- LAMG: 
 {lamg_texto}
-
 - Analgesia:
 {analgesia_texto}
 ----------------------------------------------------------------------------- 
@@ -182,18 +157,17 @@ Conduta
 *******************************************************"""
     return resultado
 
-# Geração do resultado
 if texto:
-    resultado = extrair_info(texto, selecionados_tev, selecionados_lamg)
+    resultado = extrair_info(texto)
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-# Botão para copiar para a área de transferência
-st.markdown("""
-    <button onclick="navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)" 
-            style="background-color:#4CAF50;border:none;color:white;padding:10px 20px;
-                   text-align:center;text-decoration:none;display:inline-block;
-                   font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
-        📋 Clique aqui para copiar
-    </button>
-""", unsafe_allow_html=True)
-    st.download_button("📥 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
+    st.markdown("""
+        <button onclick=\"navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)\" 
+                style=\"background-color:#4CAF50;border:none;color:white;padding:10px 20px;
+                       text-align:center;text-decoration:none;display:inline-block;
+                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;\">
+            \ud83d\udccb Clique aqui para copiar
+        </button>
+    """, unsafe_allow_html=True)
+
+    st.download_button("\ud83d\udcc5 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
