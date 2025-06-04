@@ -2,69 +2,62 @@ import streamlit as st
 import re
 from datetime import datetime
 
+# --------------------
+# Título e Interface
+# --------------------
 st.title("Gerador de Admissão Farmácia Clínica")
 
 # Seletor de tipo de formatação
 formato = st.radio("Selecione o tipo de formatação:", ["Ortopedia", "Clínica médica"])
 
+# Área de entrada de texto
 texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
-# --- Seleções TEV/TVP ---
+# --------------------
+# Opções de seleção
+# --------------------
+
+# --- TEV/TVP ---
 opcoes_tev = [
-    "Enoxaparina 20mg 1x/dia SC",
-    "Enoxaparina 20mg 12/12h SC",
-    "Enoxaparina 40mg 1x/dia SC",
-    "Enoxaparina 40mg 12/12h SC",
-    "Enoxaparina 60mg 1x/dia SC",
-    "Enoxaparina 60mg 12/12h SC",
-    "Enoxaparina 80mg 1x/dia SC",
-    "Enoxaparina 80mg 12/12h SC",
-    "Enoxaparina 100mg 1x/dia SC",
-    "Enoxaparina 100mg 12/12h SC",
-    "HNF 5.000UI 12/12h SC",
-    "HNF 5.000UI 8/8h SC"
+    "Enoxaparina 20mg 1x/dia SC", "Enoxaparina 20mg 12/12h SC",
+    "Enoxaparina 40mg 1x/dia SC", "Enoxaparina 40mg 12/12h SC",
+    "Enoxaparina 60mg 1x/dia SC", "Enoxaparina 60mg 12/12h SC",
+    "Enoxaparina 80mg 1x/dia SC", "Enoxaparina 80mg 12/12h SC",
+    "Enoxaparina 100mg 1x/dia SC", "Enoxaparina 100mg 12/12h SC",
+    "HNF 5.000UI 12/12h SC", "HNF 5.000UI 8/8h SC"
 ]
 selecionados_tev = st.multiselect("Profilaxia TEV/TVP (Selecione até 3 opções):", options=opcoes_tev, max_selections=3)
 
-# --- Seleções LAMG ---
+# --- LAMG ---
 opcoes_lamg = [
-    "Omeprazol 20mg 1x/dia VO",
-    "Omeprazol 20mg 12/12h VO",
-    "Omeprazol 40mg 1x/dia EV",
-    "Omeprazol 40mg 12/12h EV",
-    "Omeprazol 80mg 1x/dia EV",
-    "Omeprazol 80mg 12/12h EV",
-    "Pantoprazol 40mg 1x/dia EV",
-    "Pantoprazol 40mg 12/12h EV",
-    "Pantoprazol 80mg 1x/dia EV",
-    "Pantoprazol 80mg 12/12h EV"
+    "Omeprazol 20mg 1x/dia VO", "Omeprazol 20mg 12/12h VO",
+    "Omeprazol 40mg 1x/dia EV", "Omeprazol 40mg 12/12h EV",
+    "Omeprazol 80mg 1x/dia EV", "Omeprazol 80mg 12/12h EV",
+    "Pantoprazol 40mg 1x/dia EV", "Pantoprazol 40mg 12/12h EV",
+    "Pantoprazol 80mg 1x/dia EV", "Pantoprazol 80mg 12/12h EV"
 ]
 selecionados_lamg = st.multiselect("Profilaxia LAMG (Selecione até 3 opções):", options=opcoes_lamg, max_selections=3)
 
-# --- Seleções ANALGESIA ---
+# --- ANALGESIA ---
 opcoes_analgesia = [
-    "Dipirona 1g 6/6h EV",
-    "Dipirona 1g SOS EV",
-    "Tramadol 100mg 12/12h EV",
-    "Tramadol 100mg 8/8h EV",
-    "Tramadol 100mg 6/6h EV",
-    "Tramadol 100mg SOS EV",
-    "Tramadol 50mg 12/12h EV",
-    "Tramadol 50mg 8/8h EV",
-    "Tramadol 50mg 6/6h EV",
-    "Tramadol 50mg SOS EV",
-    "Tenoxicam 20mg 1x/dia EV",
-    "Tenoxicam 20mg 12/12h EV",
-    "Tenoxicam 40mg 1x/dia EV",
-    "Tenoxicam 40mg 12/12h EV",
-    "Naproxeno",
-    "Diclofenaco"
+    "Dipirona 1g 6/6h EV", "Dipirona 1g SOS EV",
+    "Tramadol 100mg 12/12h EV", "Tramadol 100mg 8/8h EV",
+    "Tramadol 100mg 6/6h EV", "Tramadol 100mg SOS EV",
+    "Tramadol 50mg 12/12h EV", "Tramadol 50mg 8/8h EV",
+    "Tramadol 50mg 6/6h EV", "Tramadol 50mg SOS EV",
+    "Tenoxicam 20mg 1x/dia EV", "Tenoxicam 20mg 12/12h EV",
+    "Tenoxicam 40mg 1x/dia EV", "Tenoxicam 40mg 12/12h EV",
+    "Naproxeno", "Diclofenaco"
 ]
 selecionados_analgesia = st.multiselect("Analgesia (Selecione até 3 opções):", options=opcoes_analgesia, max_selections=3)
 
+# --------------------
+# Funções auxiliares
+# --------------------
+
 def normalizar_data(data):
     if re.match(r'\d{2}/\d{2}/\d{2}$', data):
-        return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
+        return re.sub(r'/\d{2}$', lambda m: '/20' + m.group(0)[-2:], data)
     return data
 
 def extrair_comum(texto):
@@ -80,10 +73,15 @@ def extrair_comum(texto):
 
     return ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, nome_paciente
 
+# --------------------
+# Funções principais
+# --------------------
+
 def extrair_info_ortopedia(texto):
     hoje = datetime.today().strftime('%d/%m/%Y')
     ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
 
+    # Diagnóstico
     diagnostico = ""
     padroes_diagnostico = [
         r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)',
@@ -95,24 +93,28 @@ def extrair_info_ortopedia(texto):
             diagnostico = match.group(1).strip().replace('\n', ' ')
             break
 
+    # Mecanismo do trauma
     mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.+)', texto, re.IGNORECASE)
     hda = re.search(r'HDA:\s*(.+)', texto, re.IGNORECASE)
     mecanismo_trauma = mecanismo.group(1).strip() if mecanismo else (hda.group(1).strip() if hda else "mecanismo não especificado")
 
+    # Data da fratura
     data_fratura = re.search(r'DATA DA (?:FRATURA|LES[ÃA]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
     data_fratura_formatada = normalizar_data(data_fratura.group(1)) if data_fratura else "-"
 
+    # Cirurgias
     cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
     datas_cirurgia = []
     for data, medico in cirurgia_matches:
         data_formatada = normalizar_data(data)
         if medico:
-            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico.strip())
+            medico = re.sub(r'(?i)^Dr\\.?\\s*', '', medico.strip())
             datas_cirurgia.append(f"{data_formatada} (Dr. {medico.capitalize()})")
         else:
             datas_cirurgia.append(data_formatada)
     cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
 
+    # Texto final
     return f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
 ----------------------------------------------------------------------------
@@ -222,11 +224,12 @@ Conduta
 Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
 ************************************************************"""
 
+# --------------------
+# Execução principal
+# --------------------
+
 if texto:
-    if formato == "Ortopedia":
-        resultado = extrair_info_ortopedia(texto)
-    else:
-        resultado = extrair_info_clinica(texto)
+    resultado = extrair_info_ortopedia(texto) if formato == "Ortopedia" else extrair_info_clinica(texto)
 
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
     nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
@@ -242,4 +245,4 @@ if texto:
         </button>
     """, unsafe_allow_html=True)
 
-    st.download_button("📅 Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
+    st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
