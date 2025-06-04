@@ -195,4 +195,5 @@ st.markdown("""
                    font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
         📋 Clique aqui para copiar
     </button>
+""", unsafe_allow_html=True)
     st.download_button("📥 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
