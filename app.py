@@ -2,52 +2,72 @@ import streamlit as st
 import re
 from datetime import datetime
 
-st.set_page_config(page_title="Admissão Farmácia Clínica", layout="wide")
 st.title("Gerador de Admissão Farmácia Clínica")
 
-# Entrada de texto do prontuário
+# Seletor de tipo de formatação
+formato = st.radio("Selecione o tipo de formatação:", ["Ortopedia", "Clínica médica"])
+
 texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
-# Seleção de formatação
-formato = st.radio("Escolha o tipo de formatação:", ["Ortopedia", "Clínica médica"])
-
-# Seleções comuns
+# --- Seleções TEV/TVP ---
 opcoes_tev = [
-    "Enoxaparina 20mg 1x/dia SC", "Enoxaparina 20mg 12/12h SC",
-    "Enoxaparina 40mg 1x/dia SC", "Enoxaparina 40mg 12/12h SC",
-    "Enoxaparina 60mg 1x/dia SC", "Enoxaparina 60mg 12/12h SC",
-    "Enoxaparina 80mg 1x/dia SC", "Enoxaparina 80mg 12/12h SC",
-    "Enoxaparina 100mg 1x/dia SC", "Enoxaparina 100mg 12/12h SC",
-    "HNF 5.000UI 12/12h SC", "HNF 5.000UI 8/8h SC"
+    "Enoxaparina 20mg 1x/dia SC",
+    "Enoxaparina 20mg 12/12h SC",
+    "Enoxaparina 40mg 1x/dia SC",
+    "Enoxaparina 40mg 12/12h SC",
+    "Enoxaparina 60mg 1x/dia SC",
+    "Enoxaparina 60mg 12/12h SC",
+    "Enoxaparina 80mg 1x/dia SC",
+    "Enoxaparina 80mg 12/12h SC",
+    "Enoxaparina 100mg 1x/dia SC",
+    "Enoxaparina 100mg 12/12h SC",
+    "HNF 5.000UI 12/12h SC",
+    "HNF 5.000UI 8/8h SC"
 ]
-selecionados_tev = st.multiselect("Profilaxia TEV/TVP:", options=opcoes_tev, max_selections=3)
+selecionados_tev = st.multiselect("Profilaxia TEV/TVP (Selecione até 3 opções):", options=opcoes_tev, max_selections=3)
 
+# --- Seleções LAMG ---
 opcoes_lamg = [
-    "Omeprazol 20mg 1x/dia VO", "Omeprazol 20mg 12/12h VO",
-    "Omeprazol 40mg 1x/dia EV", "Omeprazol 40mg 12/12h EV",
-    "Omeprazol 80mg 1x/dia EV", "Omeprazol 80mg 12/12h EV",
-    "Pantoprazol 40mg 1x/dia EV", "Pantoprazol 40mg 12/12h EV",
-    "Pantoprazol 80mg 1x/dia EV", "Pantoprazol 80mg 12/12h EV"
+    "Omeprazol 20mg 1x/dia VO",
+    "Omeprazol 20mg 12/12h VO",
+    "Omeprazol 40mg 1x/dia EV",
+    "Omeprazol 40mg 12/12h EV",
+    "Omeprazol 80mg 1x/dia EV",
+    "Omeprazol 80mg 12/12h EV",
+    "Pantoprazol 40mg 1x/dia EV",
+    "Pantoprazol 40mg 12/12h EV",
+    "Pantoprazol 80mg 1x/dia EV",
+    "Pantoprazol 80mg 12/12h EV"
 ]
-selecionados_lamg = st.multiselect("Profilaxia LAMG:", options=opcoes_lamg, max_selections=3)
+selecionados_lamg = st.multiselect("Profilaxia LAMG (Selecione até 3 opções):", options=opcoes_lamg, max_selections=3)
 
+# --- Seleções ANALGESIA ---
 opcoes_analgesia = [
-    "Dipirona 1g 6/6h EV", "Dipirona 1g SOS EV",
-    "Tramadol 100mg 12/12h EV", "Tramadol 100mg 8/8h EV", "Tramadol 100mg 6/6h EV", "Tramadol 100mg SOS EV",
-    "Tramadol 50mg 12/12h EV", "Tramadol 50mg 8/8h EV", "Tramadol 50mg 6/6h EV", "Tramadol 50mg SOS EV",
-    "Tenoxicam 20mg 1x/dia EV", "Tenoxicam 20mg 12/12h EV", "Tenoxicam 40mg 1x/dia EV", "Tenoxicam 40mg 12/12h EV",
-    "Naproxeno", "Diclofenaco"
+    "Dipirona 1g 6/6h EV",
+    "Dipirona 1g SOS EV",
+    "Tramadol 100mg 12/12h EV",
+    "Tramadol 100mg 8/8h EV",
+    "Tramadol 100mg 6/6h EV",
+    "Tramadol 100mg SOS EV",
+    "Tramadol 50mg 12/12h EV",
+    "Tramadol 50mg 8/8h EV",
+    "Tramadol 50mg 6/6h EV",
+    "Tramadol 50mg SOS EV",
+    "Tenoxicam 20mg 1x/dia EV",
+    "Tenoxicam 20mg 12/12h EV",
+    "Tenoxicam 40mg 1x/dia EV",
+    "Tenoxicam 40mg 12/12h EV",
+    "Naproxeno",
+    "Diclofenaco"
 ]
-selecionados_analgesia = st.multiselect("Analgesia:", options=opcoes_analgesia, max_selections=3)
+selecionados_analgesia = st.multiselect("Analgesia (Selecione até 3 opções):", options=opcoes_analgesia, max_selections=3)
 
-# Funções auxiliares
 def normalizar_data(data):
     if re.match(r'\d{2}/\d{2}/\d{2}$', data):
         return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
     return data
 
-def extrair_campos_comuns(texto):
-    hoje = datetime.today().strftime('%d/%m/%Y')
+def extrair_comum(texto):
     ses = re.search(r'SES:\s+(\d+)', texto)
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
     idade = re.search(r'Idade:\s+(\d+)', texto)
@@ -56,13 +76,20 @@ def extrair_campos_comuns(texto):
     lamg_texto = "\n".join([f"- {med}" for med in selecionados_lamg]) if selecionados_lamg else "- Não prescrito"
     analgesia_texto = "\n".join([f"- {med}" for med in selecionados_analgesia]) if selecionados_analgesia else "- Não prescrito"
 
-    return hoje, ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
 
-def formatar_ortopedia(texto):
-    hoje, ses, paciente, idade, tev, lamg, analgesia = extrair_campos_comuns(texto)
+    return ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, nome_paciente
+
+def extrair_info_ortopedia(texto):
+    hoje = datetime.today().strftime('%d/%m/%Y')
+    ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
 
     diagnostico = ""
-    for padrao in [r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)', r'DIAGN[ÓO]STICO:\s+([^\n]+)']:
+    padroes_diagnostico = [
+        r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)',
+        r'DIAGN[ÓO]STICO:\s+([^\n]+)'
+    ]
+    for padrao in padroes_diagnostico:
         match = re.search(padrao, texto, re.IGNORECASE)
         if match:
             diagnostico = match.group(1).strip().replace('\n', ' ')
@@ -119,11 +146,11 @@ Culturas e Sorologias:
 -----------------------------------------------------------------------------
 Profilaxias e protocolos
 - TEV/TVP:
-{tev}
+{tev_texto}
 - LAMG: 
-{lamg}
+{lamg_texto}
 - Analgesia:
-{analgesia}
+{analgesia_texto}
 ----------------------------------------------------------------------------- 
 Conduta
 - Realizo análise técnica da prescrição quanto à indicação, efetividade, posologia, dose, possíveis interações medicamentosas e disponibilidade na farmácia.
@@ -138,8 +165,10 @@ Conduta
 - Farmacêutico ***
 *******************************************************"""
 
-def formatar_clinica(texto):
-    hoje, ses, paciente, idade, tev, lamg, analgesia = extrair_campos_comuns(texto)
+def extrair_info_clinica(texto):
+    hoje = datetime.today().strftime('%d/%m/%Y')
+    ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
+
     return f"""ADMISSÃO FARMACÊUTICA | ANEXO CLÍNICA MÉDICA
 ----------------------------------------------------------------------------
 Paciente: {paciente.group(1) if paciente else '-'}; SES: {ses.group(1) if ses else '-'}; 
@@ -172,11 +201,11 @@ Culturas e Sorologias:
 ----------------------------------------------------------------------------
 Profilaxias e protocolos
 - TEV/TVP:
-{tev}
+{tev_texto}
 - LAMG: 
-{lamg}
+{lamg_texto}
 - Analgesia:
-{analgesia}
+{analgesia_texto}
 ----------------------------------------------------------------------------
 Conduta
 - Realizo a avaliação farmacoterapêutica e a análise da prescrição quanto à necessidade, efetividade e segurança, incluindo avaliação de dose, posologia, via de administração, possíveis interações medicamentosas e disponibilidade em estoque.
@@ -193,20 +222,24 @@ Conduta
 Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
 ************************************************************"""
 
-# Geração do resultado
 if texto:
-    resultado = formatar_ortopedia(texto) if formato == "Ortopedia" else formatar_clinica(texto)
+    if formato == "Ortopedia":
+        resultado = extrair_info_ortopedia(texto)
+    else:
+        resultado = extrair_info_clinica(texto)
+
+    paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
+
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
     st.markdown("""
-        <button onclick="navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)" 
-                style="background-color:#07693d;border:none;color:white;padding:10px 20px;
+        <button onclick=\"navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)\" 
+                style=\"background-color:#07693d;border:none;color:white;padding:10px 20px;
                        text-align:center;text-decoration:none;display:inline-block;
-                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
+                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;\">
             📋 Clique aqui para copiar
         </button>
     """, unsafe_allow_html=True)
 
-    nome_paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
-    nome_arquivo = nome_paciente.group(1).strip().replace(" ", "_") if nome_paciente else "paciente"
-    st.download_button("📅 Baixar como .txt", resultado, file_name=f"{nome_arquivo}_admissao.txt")
+    st.download_button("📅 Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
