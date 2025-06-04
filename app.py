@@ -168,5 +168,9 @@ if texto:
         📋 Clique aqui para copiar
     </button>
 """, unsafe_allow_html=True)
-    
-    st.download_button("📅 Baixar como .txt", resultado, file_name="formatação_farmacia.txt")
+
+# Nome do arquivo com base no nome do paciente
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
+
+    # Botão de download com nome personalizado
+    st.download_button("📅 Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
