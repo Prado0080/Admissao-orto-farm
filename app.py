@@ -63,11 +63,13 @@ def extrair_info(texto):
 
     def normalizar_data(data):
         if re.match(r'\d{2}/\d{2}/\d{2}$', data):
-            return re.sub(r'/()$', lambda m: '/20' + m.group(1), data)
+            return re.sub(r'/(..)$', lambda m: '/20' + m.group(1), data)
         return data
 
-    ses = re.search(r'SES:\s+(\d+)', texto)
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
+
+    ses = re.search(r'SES:\s+(\d+)', texto)
     idade = re.search(r'Idade:\s+(\d+)', texto)
 
     diagnostico = ""
@@ -154,23 +156,19 @@ Conduta
 - Estagiário ***, supervisionado por *********
 - Farmacêutico ***
 *******************************************************"""
-    return resultado
+    return resultado, nome_paciente
 
 if texto:
-    resultado = extrair_info(texto)
+    resultado, nome_paciente = extrair_info(texto)
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
     st.markdown("""
-    <button onclick="navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)" 
-            style="background-color:#07693d;border:none;color:white;padding:10px 20px;
-                   text-align:center;text-decoration:none;display:inline-block;
-                   font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
-        📋 Clique aqui para copiar
-    </button>
-""", unsafe_allow_html=True)
+        <button onclick="navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)" 
+                style="background-color:#07693d;border:none;color:white;padding:10px 20px;
+                       text-align:center;text-decoration:none;display:inline-block;
+                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;">
+            📋 Clique aqui para copiar
+        </button>
+    """, unsafe_allow_html=True)
 
-# Nome do arquivo com base no nome do paciente
-    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
-
-    # Botão de download com nome personalizado
     st.download_button("📅 Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
