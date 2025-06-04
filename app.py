@@ -3,9 +3,11 @@ import re
 from datetime import datetime
 
 st.title("Gerador de Admissão Farmácia Clínica")
-texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
-formato = st.radio("Escolha o tipo de formatação:", ["Ortopedia", "Clínica médica"])
+# Seletor de tipo de formatação
+formato = st.radio("Selecione o tipo de formatação:", ["Ortopedia", "Clínica médica"])
+
+texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
 
 # --- Seleções TEV/TVP ---
 opcoes_tev = [
@@ -60,12 +62,62 @@ opcoes_analgesia = [
 ]
 selecionados_analgesia = st.multiselect("Analgesia (Selecione até 3 opções):", options=opcoes_analgesia, max_selections=3)
 
-def gerar_formatacao_ortopedia(paciente, ses, idade, hoje, diagnostico, mecanismo_trauma, data_fratura_formatada, cirurgia_str, tev_texto, lamg_texto, analgesia_texto):
+def normalizar_data(data):
+    if re.match(r'\d{2}/\d{2}/\d{2}$', data):
+        return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
+    return data
+
+def extrair_comum(texto):
+    ses = re.search(r'SES:\s+(\d+)', texto)
+    paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
+    idade = re.search(r'Idade:\s+(\d+)', texto)
+
+    tev_texto = "\n".join([f"- {med}" for med in selecionados_tev]) if selecionados_tev else "- Não prescrito"
+    lamg_texto = "\n".join([f"- {med}" for med in selecionados_lamg]) if selecionados_lamg else "- Não prescrito"
+    analgesia_texto = "\n".join([f"- {med}" for med in selecionados_analgesia]) if selecionados_analgesia else "- Não prescrito"
+
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
+
+    return ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, nome_paciente
+
+def extrair_info_ortopedia(texto):
+    hoje = datetime.today().strftime('%d/%m/%Y')
+    ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
+
+    diagnostico = ""
+    padroes_diagnostico = [
+        r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)',
+        r'DIAGN[ÓO]STICO:\s+([^\n]+)'
+    ]
+    for padrao in padroes_diagnostico:
+        match = re.search(padrao, texto, re.IGNORECASE)
+        if match:
+            diagnostico = match.group(1).strip().replace('\n', ' ')
+            break
+
+    mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.+)', texto, re.IGNORECASE)
+    hda = re.search(r'HDA:\s*(.+)', texto, re.IGNORECASE)
+    mecanismo_trauma = mecanismo.group(1).strip() if mecanismo else (hda.group(1).strip() if hda else "mecanismo não especificado")
+
+    data_fratura = re.search(r'DATA DA (?:FRATURA|LES[ÃA]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
+    data_fratura_formatada = normalizar_data(data_fratura.group(1)) if data_fratura else "-"
+
+    cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
+    datas_cirurgia = []
+    for data, medico in cirurgia_matches:
+        data_formatada = normalizar_data(data)
+        if medico:
+            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico.strip())
+            datas_cirurgia.append(f"{data_formatada} (Dr. {medico.capitalize()})")
+        else:
+            datas_cirurgia.append(data_formatada)
+    cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
+
     return f"""FARMÁCIA CLÍNICA 
 ADMISSÃO ORTOPEDIA 1
 ----------------------------------------------------------------------------
-Paciente: {paciente}; SES: {ses}; 
-Idade: {idade} anos; Peso: -
+Paciente: {paciente.group(1) if paciente else '-'}; SES: {ses.group(1) if ses else '-'}; 
+Idade: {idade.group(1) if idade else '-'} anos; Peso: -
 Data de admissão: {hoje}
 Data da entrevista: {hoje}
 ----------------------------------------------------------------------------
@@ -113,11 +165,14 @@ Conduta
 - Farmacêutico ***
 *******************************************************"""
 
-def gerar_formatacao_clinica(paciente, ses, idade, hoje, tev_texto, lamg_texto, analgesia_texto):
+def extrair_info_clinica(texto):
+    hoje = datetime.today().strftime('%d/%m/%Y')
+    ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
+
     return f"""ADMISSÃO FARMACÊUTICA | ANEXO CLÍNICA MÉDICA
 ----------------------------------------------------------------------------
-Paciente: {paciente}; SES: {ses}; 
-Idade: {idade} anos; Peso: -
+Paciente: {paciente.group(1) if paciente else '-'}; SES: {ses.group(1) if ses else '-'}; 
+Idade: {idade.group(1) if idade else '-'} anos; Peso: -
 Data de admissão: {hoje}
 Data da entrevista: {hoje}
 ----------------------------------------------------------------------------
@@ -167,65 +222,20 @@ Conduta
 Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
 ************************************************************"""
 
-def extrair_info(texto):
-    hoje = datetime.today().strftime('%d/%m/%Y')
-
-    def normalizar_data(data):
-        if re.match(r'\d{2}/\d{2}/\d{2}$', data):
-            return re.sub(r'/(\d{2})$', lambda m: '/20' + m.group(1), data)
-        return data
-
-    ses = re.search(r'SES:\s+(\d+)', texto)
-    paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
-    idade = re.search(r'Idade:\s+(\d+)', texto)
-
-    diagnostico = ""
-    padroes_diagnostico = [
-        r'DIAGN[ÓO]STICOS?:\s*((?:- .+\n?)+)',
-        r'DIAGN[ÓO]STICO:\s+([^\n]+)'
-    ]
-    for padrao in padroes_diagnostico:
-        match = re.search(padrao, texto, re.IGNORECASE)
-        if match:
-            diagnostico = match.group(1).strip().replace('\n', ' ')
-            break
-
-    mecanismo = re.search(r'MECANISMO DO TRAUMA:\s*(.+)', texto, re.IGNORECASE)
-    hda = re.search(r'HDA:\s*(.+)', texto, re.IGNORECASE)
-    mecanismo_trauma = mecanismo.group(1).strip() if mecanismo else (hda.group(1).strip() if hda else "mecanismo não especificado")
-
-    data_fratura = re.search(r'DATA DA (?:FRATURA|LES[ÃA]O):\s+(\d{2}/\d{2}/\d{2,4})', texto, re.IGNORECASE)
-    data_fratura_formatada = normalizar_data(data_fratura.group(1)) if data_fratura else "-"
-
-    cirurgia_matches = re.findall(r'DATA DA CIRURGIA:\s+(\d{2}/\d{2}/\d{2,4})(?:\s+\((.*?)\))?', texto)
-    datas_cirurgia = []
-    for data, medico in cirurgia_matches:
-        data_formatada = normalizar_data(data)
-        if medico:
-            medico = re.sub(r'(?i)^Dr\.?\s*', '', medico.strip())
-            datas_cirurgia.append(f"{data_formatada} (Dr. {medico.capitalize()})")
-        else:
-            datas_cirurgia.append(data_formatada)
-    cirurgia_str = "; ".join(datas_cirurgia) if datas_cirurgia else "-"
-
-    tev_texto = "\n".join([f"- {med}" for med in selecionados_tev]) if selecionados_tev else "- Não prescrito"
-    lamg_texto = "\n".join([f"- {med}" for med in selecionados_lamg]) if selecionados_lamg else "- Não prescrito"
-    analgesia_texto = "\n".join([f"- {med}" for med in selecionados_analgesia]) if selecionados_analgesia else "- Não prescrito"
-
-    nome = paciente.group(1).strip() if paciente else "paciente"
-    nome_paciente = nome.replace(" ", "_")
-
-    resultado = gerar_formatacao_ortopedia(paciente.group(1) if paciente else "-", ses.group(1) if ses else "-", idade.group(1) if idade else "-", hoje, diagnostico, mecanismo_trauma, data_fratura_formatada, cirurgia_str, tev_texto, lamg_texto, analgesia_texto) if formato == "Ortopedia" else gerar_formatacao_clinica(paciente.group(1) if paciente else "-", ses.group(1) if ses else "-", idade.group(1) if idade else "-", hoje, tev_texto, lamg_texto, analgesia_texto)
-
-    return resultado, nome_paciente
-
 if texto:
-    resultado, nome_paciente = extrair_info(texto)
+    if formato == "Ortopedia":
+        resultado = extrair_info_ortopedia(texto)
+    else:
+        resultado = extrair_info_clinica(texto)
+
+    paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
+    nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
+
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-    st.markdown(f"""
+    st.markdown("""
         <button onclick=\"navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)\" 
-                style=\"background-color:#4CAF50;border:none;color:#07693d;padding:10px 20px;
+                style=\"background-color:#07693d;border:none;color:white;padding:10px 20px;
                        text-align:center;text-decoration:none;display:inline-block;
                        font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;\">
             📋 Clique aqui para copiar
