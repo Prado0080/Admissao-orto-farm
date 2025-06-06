@@ -234,9 +234,9 @@ if texto:
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
     nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
 
-       st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
+        st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-    st.markdown("""
+st.markdown("""
         <style>
             .copiar-botao {
                 background-color: #07693d;
@@ -270,4 +270,4 @@ if texto:
         </script>
     """, unsafe_allow_html=True)
 
-    st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
+st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
