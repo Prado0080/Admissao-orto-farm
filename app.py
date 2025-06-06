@@ -236,13 +236,4 @@ if texto:
 
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-    st.markdown("""
-        <button onclick=\"navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)\" 
-                style=\"background-color:#07693d;border:none;color:white;padding:10px 20px;
-                       text-align:center;text-decoration:none;display:inline-block;
-                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;\">
-            📋 Clique aqui para copiar
-        </button>
-    """, unsafe_allow_html=True)
-
     st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
