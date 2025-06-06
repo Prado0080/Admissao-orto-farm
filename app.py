@@ -236,13 +236,38 @@ if texto:
 
     st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-    st.markdown("""
-        <button onclick=\"navigator.clipboard.writeText(document.getElementById('resultado_formatado').value)\" 
-                style=\"background-color:#07693d;border:none;color:white;padding:10px 20px;
-                       text-align:center;text-decoration:none;display:inline-block;
-                       font-size:16px;border-radius:10px;margin-top:10px;cursor:pointer;\">
-            📋 Clique aqui para copiar
-        </button>
-    """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+        .copiar-botao {
+            background-color: #07693d;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+
+    <button class="copiar-botao" onclick="copiarTexto()">📋 Clique aqui para copiar</button>
+    <p id="aviso-copiado" style="color:green; font-weight:bold; display:none;">Texto copiado para a área de transferência!</p>
+
+    <script>
+    function copiarTexto() {
+        const texto = document.getElementById("resultado_formatado").value;
+        navigator.clipboard.writeText(texto).then(function() {
+            const aviso = document.getElementById("aviso-copiado");
+            aviso.style.display = "block";
+            setTimeout(() => aviso.style.display = "none", 3000);
+        });
+    }
+    </script>
+    
+""", unsafe_allow_html=True)
+
 
     st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
