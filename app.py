@@ -234,40 +234,40 @@ if texto:
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
     nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
 
-    st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
+       st.text_area("Resultado Formatado:", resultado, height=1000, key="resultado_formatado")
 
-st.markdown("""
-    <style>
-        .copiar-botao {
-            background-color: #07693d;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 10px;
-            margin-top: 10px;
-            cursor: pointer;
+    st.markdown("""
+        <style>
+            .copiar-botao {
+                background-color: #07693d;
+                border: none;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius: 10px;
+                margin-top: 10px;
+                cursor: pointer;
+            }
+        </style>
+
+        <button class="copiar-botao" onclick="copiarTexto()">📋 Clique aqui para copiar</button>
+        <p id="aviso-copiado" style="color:green; font-weight:bold; display:none;">
+            Texto copiado para a área de transferência!
+        </p>
+
+        <script>
+        function copiarTexto() {
+            const texto = document.getElementById("resultado_formatado").value;
+            navigator.clipboard.writeText(texto).then(function() {
+                const aviso = document.getElementById("aviso-copiado");
+                aviso.style.display = "block";
+                setTimeout(() => aviso.style.display = "none", 3000);
+            });
         }
-    </style>
-
-    <button class="copiar-botao" onclick="copiarTexto()">📋 Clique aqui para copiar</button>
-    <p id="aviso-copiado" style="color:green; font-weight:bold; display:none;">Texto copiado para a área de transferência!</p>
-
-    <script>
-    function copiarTexto() {
-        const texto = document.getElementById("resultado_formatado").value;
-        navigator.clipboard.writeText(texto).then(function() {
-            const aviso = document.getElementById("aviso-copiado");
-            aviso.style.display = "block";
-            setTimeout(() => aviso.style.display = "none", 3000);
-        });
-    }
-    </script>
-    
-""", unsafe_allow_html=True)
-
+        </script>
+    """, unsafe_allow_html=True)
 
     st.download_button("🗕️ Baixar como .txt", resultado, file_name=f"{nome_paciente}_admissao.txt")
