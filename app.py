@@ -8,7 +8,7 @@ from datetime import datetime
 st.title("Gerador de Admissão Farmácia Clínica")
 
 # Seletor de tipo de formatação
-formato = st.radio("Selecione o tipo de formatação:", ["Ortopedia", "Clínica médica"])
+formato = st.radio("Selecione o tipo de formatação:", ["Ortopedia", "Clínica médica", "UTI"])
 
 # Área de entrada de texto
 texto = st.text_area("Cole aqui os dados do prontuário:", height=600)
@@ -223,13 +223,88 @@ Conduta
 .
 Segue em acompanhamento pelo Núcleo de Farmácia Clínica.
 ************************************************************"""
+def extrair_info_uti(texto):
+    hoje = datetime.today().strftime('%d/%m/%Y')
+    ses, paciente, idade, tev_texto, lamg_texto, analgesia_texto, _ = extrair_comum(texto)
+
+    return f"""----------------------------------------------------------------------------
+Paciente: {paciente.group(1) if paciente else '-'}; SES: {ses.group(1) if ses else '-'}; 
+Idade: {idade.group(1) if idade else '-'} anos; Peso: - (Informado pela nutrição em **/**)
+----------------------------------------------------------------------------
+Admissão UTI - HRC: {hoje}
+Procedência: CC - HRC
+----------------------------------------------------------------------------
+Lista de problemas
+- 
+----------------------------------------------------------------------------
+Antecedentes e comorbidades
+- 
+----------------------------------------------------------------------------
+Alergias: 
+----------------------------------------------------------------------------
+Conciliação medicamentosa:
+- Histórico obtido por meio de *** em **/**
+1.
+2.
+----------------------------------------------------------------------------
+Antibioticoterapia:
+Em uso:
+- 
+Prévios: 
+- 
+----------------------------------------------------------------------------
+Culturas e Sorologias: 
+----------------------------------------------------------------------------
+Exames laboratoriais relevantes para a farmacoterapia:
+(**/**): Cr |  eTFG mL/min/1,73 m² | Ur  | Na  | K  | P  | Mg  | TGO  | TGP  | FAL  | gGT | BT | BD | PCR  | Lc | Hb | Plaq  | 
+----------------------------------------------------------------------------
+- Sedoanalgesia:
+{analgesia_texto}
+- DVAs:
+- 
+----------------------------------------------------------------------------
+Profilaxias
+- TEV/TVP:
+{tev_texto}
+- LAMG: 
+{lamg_texto}
+----------------------------------------------------------------------------
+Corticoterapia sistêmica
+Atual: -
+Prévia: -
+----------------------------------------------------------------------------
+- SEM interações medicamentosas relevantes para acompanhamento farmacoterapêutico.
+- SEM incompatibilidades medicamentosas relevantes para acompanhamento farmacoterapêutico.
+----------------------------------------------------------------------------
+Medicamentos não padronizados: N/A
+----------------------------------------------------------------------------
+Medicamentos manipulados: N/A
+----------------------------------------------------------------------------
+Evolução
+----------------------------------------------------------------------------
+>> Condutas Farmacêuticas e Plano de Cuidado Farmacêutico<<
+- Reviso a farmacoterapia quanto a necessidade, efetividade e segurança, incluindo avaliação de dose, posologia, via de administração, possíveis interações medicamentosas e disponibilidade em estoque.
+- Monitoro os registros de controles de sinais vitais, balanço hídrico e exames laboratoriais.
+
+Intervenções:
+-
+Pendências:
+-
+
+- Segue em acompanhamento pela Farmácia Clínica;
+**********************************************"""
 
 # --------------------
 # Execução principal
 # --------------------
 
 if texto:
-    resultado = extrair_info_ortopedia(texto) if formato == "Ortopedia" else extrair_info_clinica(texto)
+    if formato == "Ortopedia":
+        resultado = extrair_info_ortopedia(texto)
+    elif formato == "Clínica médica":
+        resultado = extrair_info_clinica(texto)
+    elif formato == "UTI":
+        resultado = extrair_info_uti(texto)
 
     paciente = re.search(r'Paciente:\s+([^\t\n]+)', texto)
     nome_paciente = paciente.group(1).strip().replace(" ", "_") if paciente else "paciente"
